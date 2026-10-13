@@ -1,0 +1,33 @@
+# Python virtual environment
+.venv/
+venv/
+env/
+
+# Python generated files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Test and coverage output
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Editor and operating system files
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Generated model files and local data
+data/
+models/
+*.joblib
+*.pkl

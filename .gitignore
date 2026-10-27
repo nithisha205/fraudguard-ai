@@ -26,8 +26,15 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-# Generated model files and local data
+# Local dataset — do not upload
 data/
-models/
+
+# Ignore generated model files except the final model
+/models/*
+!/models/
+!/models/fraud_model.joblib
+
+# Ignore other serialized model files
 *.joblib
 *.pkl
+!/models/fraud_model.joblib

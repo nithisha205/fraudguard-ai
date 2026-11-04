@@ -1,17 +1,15 @@
-from pathlib import Path
-import pandas as pd
-import matplotlib.pyplot as plt
+import matplotlib
 
-# Locate the project folder and dataset.
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DATA_PATH = PROJECT_ROOT / "data" / "creditcard.csv"
-FIGURES_DIR = PROJECT_ROOT / "reports" / "figures"
+matplotlib.use("Agg")  # Save figures to files only; no GUI window.
+import matplotlib.pyplot as plt  # noqa: E402
+
+from data import FIGURES_DIR, load_data
 
 # Create the output folder if it does not exist.
 FIGURES_DIR.mkdir(parents=True, exist_ok=True)
 
 # Load the dataset.
-df = pd.read_csv(DATA_PATH)
+df, X, y = load_data()
 
 # Count legitimate and fraudulent transactions.
 class_counts = df["Class"].value_counts().sort_index()
@@ -50,7 +48,7 @@ plt.tight_layout()
 # Save the chart for our project report.
 output_path = FIGURES_DIR / "class_distribution.png"
 plt.savefig(output_path, dpi=150)
-plt.show()
+plt.close()
 
 print(f"\nChart saved to: {output_path}")
 
@@ -85,6 +83,6 @@ plt.tight_layout()
 
 amount_plot_path = FIGURES_DIR / "amount_boxplot.png"
 plt.savefig(amount_plot_path, dpi=150)
-plt.show()
+plt.close()
 
 print(f"\nBox plot saved to: {amount_plot_path}")

@@ -1,0 +1,30 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: pytest
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t fraudguard-ai .
+      - name: Smoke-test the API container
+        run: |
+          docker run -d --name api -p 8000:8000 fraudguard-ai
+          for i in $(seq 1 30); do curl -sf http://localhost:8000/health && exit 0; sleep 2; done
+          docker logs api
+          exit 1

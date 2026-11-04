@@ -1,12 +1,7 @@
-from pathlib import Path
-import pandas as pd
-
-# Locate the project folder and dataset.
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DATA_PATH = PROJECT_ROOT / "data" / "creditcard.csv"
+from data import load_data
 
 # Load the CSV file into a Pandas DataFrame.
-df = pd.read_csv(DATA_PATH)
+df, X, y = load_data()
 
 # Inspect the dataset.
 print("\n--- Dataset Shape ---")

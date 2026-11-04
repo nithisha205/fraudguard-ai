@@ -1,5 +1,8 @@
 # FraudGuard AI — Model Evaluation
 
+> This report covers the **Random Forest baseline**. The final model is XGBoost with a cost-based threshold;
+> see the [README](../README.md#results) for its results and the comparison with this baseline.
+
 ## 1. Objective
 
 The objective of this evaluation is to assess how effectively a Random Forest classifier identifies fraudulent credit card transactions.

@@ -1,66 +1,50 @@
+import sys
 from pathlib import Path
 
-import joblib
-
-# Find the main project folder.
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-
-# Locate the saved machine learning model.
-MODEL_PATH = PROJECT_ROOT / "models" / "fraud_model.joblib"
-
-# Load the saved model, threshold, and feature names.
-artifact = joblib.load(MODEL_PATH)
-
-model = artifact["model"]
-threshold = artifact["threshold"]
-features = artifact["features"]
-
-print("FraudGuard AI model loaded successfully!")
-print(f"Decision threshold: {threshold}")
-print(f"Number of expected features: {len(features)}")
-print(f"Model file: {MODEL_PATH}")
-
 from fastapi import FastAPI
+from pydantic import BaseModel, ConfigDict, FiniteFloat, create_model
 
-# Create the FastAPI application.
-app = FastAPI(
-    title="FraudGuard AI",
-    description="An API for credit card fraud detection.",
-    version="1.0.0",
+# Allow "uvicorn src.api:app" from the project root to import sibling modules.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import predictor  # noqa: E402
+
+# Decimals kept in responses; fraud probabilities are often tiny and the threshold is low.
+PROBABILITY_DECIMALS = 6
+
+# Number of features returned in each prediction's explanation.
+TOP_FACTORS = 5
+
+# Request schema: one required, finite number per model feature; unknown fields are rejected.
+Transaction = create_model(
+    "Transaction",
+    __config__=ConfigDict(
+        extra="forbid",
+        json_schema_extra={"example": {feature: 0.0 for feature in predictor.features}},
+    ),
+    **{feature: (FiniteFloat, ...) for feature in predictor.features},
 )
 
 
-# Home endpoint.
-@app.get("/")
-def home():
-    return {
-        "message": "Welcome to FraudGuard AI!",
-        "status": "API is running",
-        "model_loaded": model is not None,
-    }
-from pathlib import Path
+class Factor(BaseModel):
+    feature: str
+    value: float
+    contribution: float
 
-import joblib
-import pandas as pd
-from fastapi import FastAPI, HTTPException
 
-# Find the main project folder.
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+class Prediction(BaseModel):
+    fraud_probability: float
+    threshold: float
+    prediction: str
+    base_probability: float
+    top_factors: list[Factor]
 
-# Locate and load the saved model.
-MODEL_PATH = PROJECT_ROOT / "models" / "fraud_model.joblib"
-
-artifact = joblib.load(MODEL_PATH)
-
-model = artifact["model"]
-threshold = artifact["threshold"]
-features = artifact["features"]
 
 # Create the API application.
 app = FastAPI(
     title="FraudGuard AI",
-    description="An API for credit card fraud detection.",
-    version="1.0.0",
+    description="An API for credit card fraud detection with per-prediction explanations.",
+    version="1.2.0",
 )
 
 
@@ -70,54 +54,39 @@ def home():
     return {
         "message": "Welcome to FraudGuard AI!",
         "status": "API is running",
-        "model_loaded": model is not None,
+        "docs": "/docs",
+    }
+
+
+# Health endpoint with model details.
+@app.get("/health")
+def health():
+    return {
+        "status": "ok",
+        "model_type": type(predictor.model).__name__,
+        "threshold": predictor.threshold,
+        "threshold_method": predictor.artifact.get("threshold_method", "manual"),
+        "test_metrics": predictor.artifact.get("test_metrics", {}),
+        "n_features": len(predictor.features),
     }
 
 
 # Fraud prediction endpoint.
-@app.post("/predict")
-def predict_transaction(transaction: dict[str, float]):
+@app.post("/predict", response_model=Prediction)
+def predict_transaction(transaction: Transaction):
+    result = predictor.predict(transaction.model_dump())
 
-    # Check which features are missing or unexpected.
-    received_features = set(transaction.keys())
-    required_features = set(features)
-
-    missing_features = required_features - received_features
-    extra_features = received_features - required_features
-
-    if missing_features or extra_features:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "missing_features": sorted(missing_features),
-                "unexpected_features": sorted(extra_features),
-                "message": "Provide exactly the 30 features expected by the model.",
-            },
-        )
-
-    # Arrange the transaction features in the model's expected order.
-    transaction_df = pd.DataFrame(
-        [[transaction[feature] for feature in features]],
-        columns=features,
+    return Prediction(
+        fraud_probability=round(result["fraud_probability"], PROBABILITY_DECIMALS),
+        threshold=result["threshold"],
+        prediction=result["prediction"],
+        base_probability=round(result["base_probability"], PROBABILITY_DECIMALS),
+        top_factors=[
+            Factor(
+                feature=factor["feature"],
+                value=factor["value"],
+                contribution=round(factor["contribution"], 4),
+            )
+            for factor in result["factors"][:TOP_FACTORS]
+        ],
     )
-
-    # Calculate the probability that the transaction is fraudulent.
-    probabilities = model.predict_proba(transaction_df)[0]
-
-    # Find the probability associated with class 1 (fraud).
-    fraud_class_index = list(model.classes_).index(1)
-    fraud_probability = float(probabilities[fraud_class_index])
-
-    # Classify the transaction using the saved threshold.
-    prediction = (
-        "Fraudulent"
-        if fraud_probability >= threshold
-        else "Legitimate"
-    )
-
-    # Return the prediction to the user.
-    return {
-        "fraud_probability": round(fraud_probability, 4),
-        "threshold": threshold,
-        "prediction": prediction,
-    }

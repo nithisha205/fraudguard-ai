@@ -29,12 +29,7 @@ Thumbs.db
 # Local dataset — do not upload
 data/
 
-# Ignore generated model files except the final model
-/models/*
-!/models/
-!/models/fraud_model.joblib
-
-# Ignore other serialized model files
+# Serialized models (only the final model is committed)
 *.joblib
 *.pkl
 !/models/fraud_model.joblib

@@ -198,6 +198,13 @@ python scripts/evaluate_final_model.py       # cost-based threshold, final test,
 python scripts/make_samples.py               # dashboard sample transactions
 ```
 
+## Deploying
+
+`render.yaml` deploys the dashboard and the API to [Render](https://render.com)'s free plan from this repository:
+in Render choose **New → Blueprint**, connect the GitHub repository and click **Apply**.
+Each service uses about 150–200 MB of memory, within the free plan's 512 MB.
+Free services sleep after 15 minutes without visitors, so the first visit afterwards takes about a minute.
+
 ## Tests and linting
 
 ```bash

@@ -1,0 +1,23 @@
+# Render Blueprint: deploys the dashboard and the API from this repository's Dockerfile.
+# In Render: New > Blueprint > connect this GitHub repository.
+services:
+  - type: web
+    name: fraudguard-dashboard
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerCommand: streamlit run src/fraudguard/dashboard.py --server.port 8501 --server.address 0.0.0.0
+    healthCheckPath: /_stcore/health
+    envVars:
+      - key: PORT
+        value: "8501"
+
+  - type: web
+    name: fraudguard-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "8000"

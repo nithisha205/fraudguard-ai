@@ -1,13 +1,7 @@
-import sys
-from pathlib import Path
-
 from fastapi import FastAPI
 from pydantic import BaseModel, ConfigDict, FiniteFloat, create_model
 
-# Allow "uvicorn src.api:app" from the project root to import sibling modules.
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-import predictor  # noqa: E402
+from fraudguard import predictor
 
 # Decimals kept in responses; fraud probabilities are often tiny and the threshold is low.
 PROBABILITY_DECIMALS = 6

@@ -2,10 +2,9 @@ import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 
-import api
-import predictor
-from data import total_cost
-from explain import explain_xgboost, sigmoid
+from fraudguard import api, predictor
+from fraudguard.data import total_cost
+from fraudguard.explain import explain_xgboost, sigmoid
 
 client = TestClient(api.app)
 

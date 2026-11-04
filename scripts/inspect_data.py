@@ -1,4 +1,4 @@
-from data import load_data
+from fraudguard.data import load_data
 
 # Load the CSV file into a Pandas DataFrame.
 df, X, y = load_data()

@@ -1,7 +1,7 @@
 from sklearn.metrics import average_precision_score
-
-from data import load_data, make_random_forest, split_data
 from threshold_report import print_threshold_table
+
+from fraudguard.data import load_data, make_random_forest, split_data
 
 # Load the dataset and create the shared 60/20/20 split.
 df, X, y = load_data()

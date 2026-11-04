@@ -1,5 +1,8 @@
 # FraudGuard AI — API Development and Testing
 
+> Written for the first, Random Forest version of the API. The current API uses XGBoost, validates requests with a typed schema,
+> returns the top contributing features, and is covered by automated tests in `tests/`; see the [README](../README.md#api).
+
 ## 1. Overview
 
 FraudGuard AI exposes a trained Random Forest classification model through a REST API built with FastAPI.

@@ -3,7 +3,7 @@ import matplotlib
 matplotlib.use("Agg")  # Save figures to files only; no GUI window.
 import matplotlib.pyplot as plt  # noqa: E402
 
-from data import FIGURES_DIR, load_data
+from fraudguard.data import FIGURES_DIR, load_data
 
 # Create the output folder if it does not exist.
 FIGURES_DIR.mkdir(parents=True, exist_ok=True)
@@ -40,7 +40,7 @@ for bar in bars:
         ha="center",
         va="bottom",
         xytext=(0, 3),
-        textcoords="offset points"
+        textcoords="offset points",
     )
 
 plt.tight_layout()
@@ -55,11 +55,7 @@ print(f"\nChart saved to: {output_path}")
 
 # Compare transaction amounts by class.
 print("\n--- Transaction Amount Summary ---")
-print(
-    df.groupby("Class")["Amount"]
-    .describe()
-    .rename(index={0: "Legitimate", 1: "Fraud"})
-)
+print(df.groupby("Class")["Amount"].describe().rename(index={0: "Legitimate", 1: "Fraud"}))
 
 # Draw box plots for transaction amounts.
 plt.figure(figsize=(8, 5))
@@ -69,11 +65,7 @@ amounts_by_class = [
     df.loc[df["Class"] == 1, "Amount"],
 ]
 
-plt.boxplot(
-    amounts_by_class,
-    tick_labels=["Legitimate (0)", "Fraud (1)"],
-    showfliers=False
-)
+plt.boxplot(amounts_by_class, tick_labels=["Legitimate (0)", "Fraud (1)"], showfliers=False)
 
 plt.yscale("log")
 plt.title("Transaction Amounts by Class (Log Scale)")

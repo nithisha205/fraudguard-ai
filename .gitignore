@@ -33,3 +33,6 @@ data/
 *.joblib
 *.pkl
 !/models/fraud_model.joblib
+
+# Python package build metadata
+*.egg-info/

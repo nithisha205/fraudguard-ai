@@ -6,6 +6,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+ENV PYTHONPATH=/app/src
 
 COPY requirements-app.txt .
 RUN pip install --no-cache-dir -r requirements-app.txt
@@ -20,4 +21,4 @@ COPY reports/figures/threshold_cost.png reports/figures/monitoring.png reports/f
 EXPOSE 8000 8501
 
 # Serve the API by default; docker-compose.yml also runs the dashboard from this image.
-CMD ["uvicorn", "src.api:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "fraudguard.api:app", "--host", "0.0.0.0", "--port", "8000"]

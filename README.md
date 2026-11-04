@@ -33,7 +33,7 @@ so a 2% chance of fraud is already 13 times the average. The cost curve is nearl
 
 ### Model comparison
 
-5-fold cross-validation on the training + validation data (227,845 transactions, 394 fraud), produced by `src/compare_models.py`:
+5-fold cross-validation on the training + validation data (227,845 transactions, 394 fraud), produced by `scripts/compare_models.py`:
 
 | Model | Avg. precision | Brier score | Best threshold | Cost | Missed fraud | False alarms | Cost with expected-loss rule |
 |---|---:|---:|---:|---:|---:|---:|---:|
@@ -50,7 +50,7 @@ Logistic Regression's huge expected-loss cost shows why that rule needs realisti
 ### Does it work on future transactions?
 
 The random split mixes transactions from the whole 48 hours, so the model is tested on the same period it learned from.
-`src/time_split_evaluation.py` instead trains on the first 60% of transactions in time, picks the threshold on the next 20%, and tests on the last 20% (hours 40–48):
+`experiments/time_split_evaluation.py` instead trains on the first 60% of transactions in time, picks the threshold on the next 20%, and tests on the last 20% (hours 40–48):
 
 | Split | Avg. precision | ROC-AUC | Fraud caught | False alarms | Cost / total fraud |
 |---|---:|---:|---:|---:|---:|
@@ -63,7 +63,7 @@ Fraud patterns shift even within two days; a real deployment would need regular 
 
 ### Monitoring drift and retraining
 
-If the model gets worse over time, when should it be retrained? `src/monitoring.py` replays the 48 hours in 8-hour blocks.
+If the model gets worse over time, when should it be retrained? `scripts/monitoring.py` replays the 48 hours in 8-hour blocks.
 A model trained on the first 16 hours and never updated (**static**) is compared with retraining before every block on all data so far (**expanding**)
 or on the latest 16 hours only (**sliding**). All use the saved threshold of 0.02.
 
@@ -102,18 +102,18 @@ merchant or transaction velocity, not a different model or threshold.
 
 Three ideas that did **not** help, kept here because negative results are results too:
 
-- **Hour-of-day features** (`src/feature_experiment.py`): fraud is up to 10× more common in some hours, but adding the hour (also as a 24-hour circle) left cross-validated average precision unchanged (0.8529 vs 0.8525) and did not lower cost. The model already gets this from `Time` and the V features.
+- **Hour-of-day features** (`experiments/feature_experiment.py`): fraud is up to 10× more common in some hours, but adding the hour (also as a 24-hour circle) left cross-validated average precision unchanged (0.8529 vs 0.8525) and did not lower cost. The model already gets this from `Time` and the V features.
 - **Flagging by expected loss** (`probability × amount > $5`) instead of one threshold lets many small frauds through and was not cheaper, even with isotonic calibration (about 2% better, within noise).
 - **Up-weighting fraud** (`scale_pos_weight=10`) did not improve average precision on the validation set for XGBoost, and hurt LightGBM badly (0.83 → 0.56).
 
 ## How it works
 
-1. **Split** — stratified 60% train / 20% validation / 20% test (`src/data.py`). The test set is used once, at the end.
-2. **Compare models** — Logistic Regression, Random Forest, LightGBM, XGBoost and calibrated XGBoost with 5-fold cross-validation (`src/compare_models.py`).
-3. **Choose the threshold by cost** — `src/evaluate_final_model.py` gets out-of-fold XGBoost probabilities for the training + validation data,
+1. **Split** — stratified 60% train / 20% validation / 20% test (`src/fraudguard/data.py`). The test set is used once, at the end.
+2. **Compare models** — Logistic Regression, Random Forest, LightGBM, XGBoost and calibrated XGBoost with 5-fold cross-validation (`scripts/compare_models.py`).
+3. **Choose the threshold by cost** — `scripts/evaluate_final_model.py` gets out-of-fold XGBoost probabilities for the training + validation data,
    keeps the threshold with the lowest `missed fraud amount + $5 × false alarms`, trains the final model on all of that data,
    evaluates it once on the test set against the Random Forest baseline, and lists the largest missed frauds with their explanations.
-4. **Explain** — `src/explain.py` uses XGBoost's built-in TreeSHAP. Contributions are in log-odds: positive pushes towards fraud, negative towards legitimate.
+4. **Explain** — `src/fraudguard/explain.py` uses XGBoost's built-in TreeSHAP. Contributions are in log-odds: positive pushes towards fraud, negative towards legitimate.
    The base value plus all contributions reproduces the model's prediction exactly (checked in the tests).
 
 ## Quick start
@@ -133,13 +133,14 @@ docker compose up --build
 
 ```bash
 pip install -r requirements.txt
-uvicorn src.api:app --reload
-streamlit run src/dashboard.py
+pip install -e .
+uvicorn fraudguard.api:app --reload
+streamlit run src/fraudguard/dashboard.py
 ```
 
 ## Dashboard
 
-`src/dashboard.py` has four tabs:
+`src/fraudguard/dashboard.py` has four tabs:
 
 - **Check a transaction** — pick any of the 298 held-out test transactions (all 98 test frauds plus 200 legitimate ones),
   see the fraud probability, the decision, the true label and a chart of the features behind the decision.
@@ -184,46 +185,45 @@ The request body must contain exactly the 30 model features (`Time`, `V1`–`V28
 ## Retraining
 
 1. Download `creditcard.csv` from the [Kaggle Credit Card Fraud Detection dataset](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud) (ULB Machine Learning Group) into `data/`.
-2. Run the scripts from the project root:
+2. Install the project once with `pip install -r requirements.txt` and `pip install -e .`, then run the scripts from the project root:
 
 ```bash
-python src/inspect_data.py          # dataset overview
-python src/explore_data.py          # charts in reports/figures/
-python src/compare_models.py        # cross-validated model comparison (about 5 minutes)
-python src/feature_experiment.py    # hour-of-day feature experiment
-python src/time_split_evaluation.py # random vs time-based split
-python src/monitoring.py            # drift report and retraining simulation
-python src/evaluate_final_model.py  # cost-based threshold, final test, saves the model
-python src/make_samples.py          # dashboard sample transactions
+python scripts/inspect_data.py               # dataset overview
+python scripts/explore_data.py               # charts in reports/figures/
+python scripts/compare_models.py             # cross-validated model comparison (about 5 minutes)
+python experiments/feature_experiment.py     # hour-of-day feature experiment
+python experiments/time_split_evaluation.py  # random vs time-based split
+python scripts/monitoring.py                 # drift report and retraining simulation
+python scripts/evaluate_final_model.py       # cost-based threshold, final test, saves the model
+python scripts/make_samples.py               # dashboard sample transactions
 ```
 
-## Tests
+## Tests and linting
 
 ```bash
 pytest
+ruff check .
+ruff format --check .
 ```
 
 ## Project structure
 
 ```text
-src/
-  data.py                  shared loading, split, models, cross-validation and cost
-  compare_models.py        cross-validated model comparison
-  evaluate_final_model.py  cost-based threshold, final test, missed-fraud analysis, model export
-  feature_experiment.py    hour-of-day feature experiment
-  time_split_evaluation.py random vs time-based split
-  drift.py                 Population Stability Index (PSI) drift checks
-  monitoring.py            drift report and retraining simulation
-  explain.py               per-prediction feature contributions (TreeSHAP)
-  predictor.py             loads the model; scores and explains one transaction
-  api.py                   FastAPI service
-  dashboard.py             Streamlit dashboard
-  ...                      exploration and earlier experiment scripts
-tests/                     API, explanation, cost, drift and dashboard tests
-samples/                   298 held-out test transactions for the dashboard
-reports/                   EDA notes, Random Forest baseline evaluation, API testing, figures
-models/fraud_model.joblib  trained model, threshold, feature list and test metrics
+src/fraudguard/              the installable package used by the API and dashboard
+  data.py                    loading, split, models, cross-validation and cost
+  explain.py                 per-prediction feature contributions (TreeSHAP)
+  predictor.py               loads the model; scores and explains one transaction
+  drift.py                   Population Stability Index (PSI) drift checks
+  api.py                     FastAPI service
+  dashboard.py               Streamlit dashboard
+scripts/                     the main pipeline: explore, compare, train and evaluate, monitor, make samples
+experiments/                 one-off studies (time split, hour features) and the earlier baseline scripts
+tests/                       API, explanation, cost, drift and dashboard tests
+samples/                     298 held-out test transactions for the dashboard
+reports/                     EDA notes, baseline evaluation, monitoring results, figures
+models/fraud_model.joblib    trained model, threshold, feature list and test metrics
 Dockerfile, docker-compose.yml, requirements-app.txt   container for the API and dashboard
+pyproject.toml               package, pytest and ruff settings
 ```
 
 ## Limitations

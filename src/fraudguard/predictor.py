@@ -1,14 +1,10 @@
-from pathlib import Path
-
 import joblib
 import pandas as pd
 
-from explain import explain_xgboost, sigmoid
+from fraudguard.data import MODEL_PATH
+from fraudguard.explain import explain_xgboost, sigmoid
 
-# Locate and load the saved model, threshold, and feature names.
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-MODEL_PATH = PROJECT_ROOT / "models" / "fraud_model.joblib"
-
+# Load the saved model, threshold, and feature names.
 artifact = joblib.load(MODEL_PATH)
 
 model = artifact["model"]
@@ -35,7 +31,7 @@ def predict(values, decision_threshold=None):
     factors = sorted(
         (
             {"feature": f, "value": float(values[f]), "contribution": float(c)}
-            for f, c in zip(features, contributions[0])
+            for f, c in zip(features, contributions[0], strict=True)
         ),
         key=lambda factor: abs(factor["contribution"]),
         reverse=True,

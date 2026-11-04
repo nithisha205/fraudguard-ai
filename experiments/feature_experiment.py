@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import average_precision_score
 
-from data import (
+from fraudguard.data import (
     cross_val_folds,
     load_data,
     make_xgboost,

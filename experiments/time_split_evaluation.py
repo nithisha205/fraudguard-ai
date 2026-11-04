@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.metrics import average_precision_score, roc_auc_score
 
-from data import load_data, make_xgboost, split_data, total_cost
+from fraudguard.data import load_data, make_xgboost, split_data, total_cost
 
 CANDIDATE_THRESHOLDS = np.round(np.arange(0.01, 1.00, 0.01), 2)
 
@@ -11,9 +11,7 @@ def evaluate(name, X_train, y_train, X_val, y_val, X_test, y_test):
     model = make_xgboost().fit(X_train, y_train)
 
     val_probabilities = model.predict_proba(X_val)[:, 1]
-    val_costs = [
-        total_cost(y_val, val_probabilities >= t, X_val["Amount"]) for t in CANDIDATE_THRESHOLDS
-    ]
+    val_costs = [total_cost(y_val, val_probabilities >= t, X_val["Amount"]) for t in CANDIDATE_THRESHOLDS]
     threshold = CANDIDATE_THRESHOLDS[int(np.argmin(val_costs))]
 
     probabilities = model.predict_proba(X_test)[:, 1]
@@ -47,9 +45,12 @@ train_end, val_end = int(len(order) * 0.6), int(len(order) * 0.8)
 train_idx, val_idx, test_idx = order[:train_end], order[train_end:val_end], order[val_end:]
 evaluate(
     "Time-based (past -> future)",
-    X.iloc[train_idx], y.iloc[train_idx],
-    X.iloc[val_idx], y.iloc[val_idx],
-    X.iloc[test_idx], y.iloc[test_idx],
+    X.iloc[train_idx],
+    y.iloc[train_idx],
+    X.iloc[val_idx],
+    y.iloc[val_idx],
+    X.iloc[test_idx],
+    y.iloc[test_idx],
 )
 
 hours = X["Time"].iloc[test_idx] / 3600

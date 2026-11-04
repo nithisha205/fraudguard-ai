@@ -1,5 +1,8 @@
 # FraudGuard AI — Project Development Log
 
+> This log covers the project up to the first Random Forest model and API. Later work (XGBoost, cost-based threshold,
+> explanations, dashboard, Docker and drift monitoring) is described in the [README](../README.md).
+
 ## 1. Project Overview
 
 FraudGuard AI is a machine learning application that estimates the probability of credit card fraud using a Random Forest classifier.

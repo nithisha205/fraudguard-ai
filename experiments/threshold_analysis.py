@@ -2,9 +2,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import average_precision_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-
-from data import RANDOM_STATE, load_data, split_data
 from threshold_report import print_threshold_table
+
+from fraudguard.data import RANDOM_STATE, load_data, split_data
 
 # Load the dataset and create the shared 60/20/20 split.
 df, X, y = load_data()

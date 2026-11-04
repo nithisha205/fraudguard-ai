@@ -1,4 +1,4 @@
-from data import load_data, split_data
+from fraudguard.data import load_data, split_data
 
 # Load the dataset and create the shared 60/20/20 split.
 df, X, y = load_data()

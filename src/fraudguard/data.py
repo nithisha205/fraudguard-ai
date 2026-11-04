@@ -7,8 +7,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import StratifiedKFold, train_test_split
 from xgboost import XGBClassifier
 
-# Locate the project folder and dataset.
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+# Locate the project folder (two levels above src/fraudguard/) and dataset.
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATA_PATH = PROJECT_ROOT / "data" / "creditcard.csv"
 MODEL_PATH = PROJECT_ROOT / "models" / "fraud_model.joblib"
 FIGURES_DIR = PROJECT_ROOT / "reports" / "figures"

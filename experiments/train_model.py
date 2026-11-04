@@ -8,7 +8,7 @@ from sklearn.metrics import (
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from data import RANDOM_STATE, load_data, split_data
+from fraudguard.data import RANDOM_STATE, load_data, split_data
 
 # Baseline: Logistic Regression trained on the training split and
 # checked on the validation split (the test split stays untouched).

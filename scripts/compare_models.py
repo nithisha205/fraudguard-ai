@@ -7,7 +7,7 @@ from sklearn.metrics import average_precision_score, brier_score_loss
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from data import (
+from fraudguard.data import (
     RANDOM_STATE,
     REVIEW_COST,
     load_data,
@@ -53,9 +53,7 @@ models = {
         verbose=-1,
     ),
     "XGBoost": make_xgboost(),
-    "XGBoost + isotonic calibration": CalibratedClassifierCV(
-        make_xgboost(), method="isotonic", cv=3
-    ),
+    "XGBoost + isotonic calibration": CalibratedClassifierCV(make_xgboost(), method="isotonic", cv=3),
 }
 
 print(f"--- Model Comparison (5-fold CV, {len(y_dev):,} transactions, {int(y_dev.sum())} fraud) ---")
@@ -84,4 +82,6 @@ for name, model in models.items():
     )
 
 print(f"\nTotal fraud amount in these transactions: ${amounts[y_dev.to_numpy() == 1].sum():,.0f}")
-print("Best thresholds are chosen on the same predictions they are scored on, so costs are slightly optimistic.")
+print(
+    "Best thresholds are chosen on the same predictions they are scored on, so costs are slightly optimistic."
+)

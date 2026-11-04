@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from drift import PSI_RETRAIN, PSI_WARNING, drift_status, psi
+from fraudguard.drift import PSI_RETRAIN, PSI_WARNING, drift_status, psi
 
 rng = np.random.default_rng(42)
 

@@ -14,6 +14,11 @@ jobs:
           python-version: "3.11"
           cache: pip
       - run: pip install -r requirements.txt
+      - run: pip install -e .
+      - name: Lint
+        run: |
+          ruff check .
+          ruff format --check .
       - run: pytest
 
   docker:

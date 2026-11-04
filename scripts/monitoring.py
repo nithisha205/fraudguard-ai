@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 from sklearn.metrics import average_precision_score  # noqa: E402
 
-from data import FIGURES_DIR, PROJECT_ROOT, load_data, make_xgboost, total_cost  # noqa: E402
-from drift import PSI_RETRAIN, PSI_WARNING, drift_status, psi  # noqa: E402
-from predictor import threshold as THRESHOLD  # noqa: E402
+from fraudguard.data import FIGURES_DIR, PROJECT_ROOT, load_data, make_xgboost, total_cost  # noqa: E402
+from fraudguard.drift import PSI_RETRAIN, PSI_WARNING, drift_status, psi  # noqa: E402
+from fraudguard.predictor import threshold as THRESHOLD  # noqa: E402
 
 MONITORING_PATH = PROJECT_ROOT / "reports" / "monitoring.json"
 BLOCK_HOURS = 8
@@ -82,23 +82,24 @@ for b in range(INITIAL_BLOCKS, n_blocks):
     }
     scores = {name: score_block(model, X_block, y_block) for name, model in strategies.items()}
 
-    results.append({
-        "block": b,
-        "hours": [b * BLOCK_HOURS, (b + 1) * BLOCK_HOURS],
-        "transactions": int(current.sum()),
-        "fraud": int(y_block.sum()),
-        "fraud_amount": round(float(X_block.loc[y_block == 1, "Amount"].sum()), 2),
-        "score_psi": None if np.isnan(score_psi) else round(score_psi, 4),
-        "top_feature_psi": {f: round(v, 4) for f, v in top_features if not np.isnan(v)},
-        "status": status,
-        "strategies": scores,
-    })
+    results.append(
+        {
+            "block": b,
+            "hours": [b * BLOCK_HOURS, (b + 1) * BLOCK_HOURS],
+            "transactions": int(current.sum()),
+            "fraud": int(y_block.sum()),
+            "fraud_amount": round(float(X_block.loc[y_block == 1, "Amount"].sum()), 2),
+            "score_psi": None if np.isnan(score_psi) else round(score_psi, 4),
+            "top_feature_psi": {f: round(v, 4) for f, v in top_features if not np.isnan(v)},
+            "status": status,
+            "strategies": scores,
+        }
+    )
 
     print(
         f"{b:6d} | {b * BLOCK_HOURS:2d}-{(b + 1) * BLOCK_HOURS:2d}h | {int(y_block.sum()):5d} | "
         f"{top_features[0][0]:>6} {top_features[0][1]:12.4f} | {score_psi:9.4f} | "
-        f"{status:9} | "
-        + " / ".join(f"{scores[s]['average_precision']:.4f}" for s in strategies)
+        f"{status:9} | " + " / ".join(f"{scores[s]['average_precision']:.4f}" for s in strategies)
     )
 
 # Totals over all monitored blocks.
@@ -107,7 +108,8 @@ totals = {
         "cost": round(sum(r["strategies"][name]["cost"] for r in results), 2),
         "caught_share": round(
             sum(r["strategies"][name]["recall"] * r["fraud"] for r in results)
-            / sum(r["fraud"] for r in results), 4
+            / sum(r["fraud"] for r in results),
+            4,
         ),
     }
     for name in ["static", "expanding", "sliding"]
@@ -116,14 +118,19 @@ print("\nTotal over monitored blocks:")
 for name, total in totals.items():
     print(f"  {name:9} cost ${total['cost']:9,.2f}  fraud caught {total['caught_share']:.1%}")
 
-MONITORING_PATH.write_text(json.dumps({
-    "block_hours": BLOCK_HOURS,
-    "threshold": THRESHOLD,
-    "psi_warning": PSI_WARNING,
-    "psi_retrain": PSI_RETRAIN,
-    "blocks": results,
-    "totals": totals,
-}, indent=2))
+MONITORING_PATH.write_text(
+    json.dumps(
+        {
+            "block_hours": BLOCK_HOURS,
+            "threshold": THRESHOLD,
+            "psi_warning": PSI_WARNING,
+            "psi_retrain": PSI_RETRAIN,
+            "blocks": results,
+            "totals": totals,
+        },
+        indent=2,
+    )
+)
 print(f"\nResults saved to: {MONITORING_PATH}")
 
 # Chart: performance per block for each strategy, and the label-free drift signal.

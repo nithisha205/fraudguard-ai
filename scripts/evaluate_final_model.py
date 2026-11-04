@@ -12,7 +12,7 @@ from sklearn.metrics import (  # noqa: E402
     roc_auc_score,
 )
 
-from data import (  # noqa: E402
+from fraudguard.data import (  # noqa: E402
     FIGURES_DIR,
     MODEL_PATH,
     REVIEW_COST,
@@ -23,7 +23,7 @@ from data import (  # noqa: E402
     split_data,
     total_cost,
 )
-from explain import explain_xgboost  # noqa: E402
+from fraudguard.explain import explain_xgboost  # noqa: E402
 
 CANDIDATE_THRESHOLDS = np.round(np.arange(0.01, 1.00, 0.01), 2)
 
@@ -119,8 +119,7 @@ if len(missed):
     print("Largest missed fraud and the features that made them look legitimate:")
     for i in np.argsort(-missed["Amount"].to_numpy())[:5]:
         reasons = ", ".join(
-            f"{missed.columns[j]} ({contributions[i, j]:+.2f})"
-            for j in np.argsort(contributions[i])[:3]
+            f"{missed.columns[j]} ({contributions[i, j]:+.2f})" for j in np.argsort(contributions[i])[:3]
         )
         print(
             f"  ${missed['Amount'].iloc[i]:8,.2f}  probability {missed_probabilities[i]:.4f}  "

@@ -10,15 +10,10 @@ def print_threshold_table(y_true, probabilities, thresholds=THRESHOLDS):
     for threshold in thresholds:
         predictions = (probabilities >= threshold).astype(int)
 
-        tn, fp, fn, tp = confusion_matrix(
-            y_true, predictions, labels=[0, 1]
-        ).ravel()
+        tn, fp, fn, tp = confusion_matrix(y_true, predictions, labels=[0, 1]).ravel()
 
         precision = precision_score(y_true, predictions, zero_division=0)
         recall = recall_score(y_true, predictions, zero_division=0)
         f1 = f1_score(y_true, predictions, zero_division=0)
 
-        print(
-            f"{threshold:9.2f} | {precision:9.4f} | {recall:6.4f} | "
-            f"{f1:8.4f} | {fp:15,d} | {fn:12,d}"
-        )
+        print(f"{threshold:9.2f} | {precision:9.4f} | {recall:6.4f} | {f1:8.4f} | {fp:15,d} | {fn:12,d}")

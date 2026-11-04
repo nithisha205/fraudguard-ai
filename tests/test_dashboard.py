@@ -2,7 +2,7 @@ from pathlib import Path
 
 from streamlit.testing.v1 import AppTest
 
-DASHBOARD = str(Path(__file__).resolve().parent.parent / "src" / "dashboard.py")
+DASHBOARD = str(Path(__file__).resolve().parent.parent / "src" / "fraudguard" / "dashboard.py")
 
 
 def test_dashboard_runs_and_scores_a_transaction():

@@ -9,6 +9,7 @@ An end-to-end machine learning project that detects potentially fraudulent credi
 - FastAPI service that returns the fraud probability *and* the features that pushed it up or down (TreeSHAP).
 - Streamlit dashboard to inspect real test transactions, try "what if" changes and see the cost trade-off live.
 - Honest evaluation: a time-based split, error analysis of missed fraud, and the ideas that did not work.
+- Drift monitoring and a retraining simulation showing when and how to update the model.
 - Runs with one command in Docker; tests and a Docker build run on every push with GitHub Actions.
 
 ## Results
@@ -60,6 +61,38 @@ Average precision drops from 0.87 to 0.80 and the share of fraud money lost doub
 Fraud patterns shift even within two days; a real deployment would need regular retraining and monitoring.
 (Both rows use a single 60/20/20 split without cross-validation, so they differ slightly from the final model's results above.)
 
+### Monitoring drift and retraining
+
+If the model gets worse over time, when should it be retrained? `src/monitoring.py` replays the 48 hours in 8-hour blocks.
+A model trained on the first 16 hours and never updated (**static**) is compared with retraining before every block on all data so far (**expanding**)
+or on the latest 16 hours only (**sliding**). All use the saved threshold of 0.02.
+
+![Monitoring simulation](reports/figures/monitoring.png)
+
+| Hours | Fraud | Drift status | Score PSI | Static avg precision | Expanding avg precision |
+|---|---:|---|---:|---:|---:|
+| 16–24 | 90 | no earlier day | – | 0.794 | 0.794 |
+| 24–32 | 75 | retrain | 1.07 | 0.826 | 0.853 |
+| 32–40 | 59 | retrain | 0.42 | 0.723 | 0.776 |
+| 40–48 | 77 | warning | 0.16 | 0.777 | 0.804 |
+
+| Strategy | Total cost | Fraud caught |
+|---|---:|---:|
+| Static (never retrained) | $12,846 | 82.7% |
+| **Expanding (all data so far)** | **$11,834** | 82.4% |
+| Sliding (latest 16 hours) | $12,013 | 81.4% |
+
+- **Retraining pays off:** expanding retraining wins in every block after the first day and cuts total cost by about 8% ($1,012).
+  Keeping all past data beats a short sliding window, because fraud is rare and every example counts.
+- **Drift can be seen before labels arrive.** The Population Stability Index (PSI) compares each block with the same hours one day earlier,
+  without needing to know which transactions were fraud. The fraud-score PSI flagged exactly the blocks where the static model fell behind.
+- **Compare like with like.** Comparing night-time transactions with a mix of day and night raised false alarms on almost every feature
+  (V12: PSI 0.81 against the first 16 hours, but 0.003 against the previous night). With a same-time-of-day reference, only a real shift on day 2 remains,
+  led by `V1`, `V3` and `V28`.
+
+PSI rule of thumb: below 0.10 OK, 0.10–0.25 warning, above 0.25 retrain. With only two days of data this is a simulation, not proof;
+a real system would watch weeks of data and retrain on a schedule as well as on alerts.
+
 ### What the model still misses
 
 The 13 missed test frauds ($1,830.72) have a median predicted fraud probability below 0.01%: to the model they look completely normal.
@@ -106,12 +139,13 @@ streamlit run src/dashboard.py
 
 ## Dashboard
 
-`src/dashboard.py` has three tabs:
+`src/dashboard.py` has four tabs:
 
 - **Check a transaction** — pick any of the 298 held-out test transactions (all 98 test frauds plus 200 legitimate ones),
   see the fraud probability, the decision, the true label and a chart of the features behind the decision.
   "What if?" lets you change the most influential features and watch the probability move.
 - **Sample overview** — fraud caught, money missed, false alarms and total cost for the sample; move the threshold and review cost in the sidebar to see the trade-off.
+- **Monitoring** — drift status per 8-hour block and the cost of never retraining vs retraining.
 - **Model** — test metrics, how the threshold was chosen, and the cost curve.
 
 ## API
@@ -158,6 +192,7 @@ python src/explore_data.py          # charts in reports/figures/
 python src/compare_models.py        # cross-validated model comparison (about 5 minutes)
 python src/feature_experiment.py    # hour-of-day feature experiment
 python src/time_split_evaluation.py # random vs time-based split
+python src/monitoring.py            # drift report and retraining simulation
 python src/evaluate_final_model.py  # cost-based threshold, final test, saves the model
 python src/make_samples.py          # dashboard sample transactions
 ```
@@ -177,12 +212,14 @@ src/
   evaluate_final_model.py  cost-based threshold, final test, missed-fraud analysis, model export
   feature_experiment.py    hour-of-day feature experiment
   time_split_evaluation.py random vs time-based split
+  drift.py                 Population Stability Index (PSI) drift checks
+  monitoring.py            drift report and retraining simulation
   explain.py               per-prediction feature contributions (TreeSHAP)
   predictor.py             loads the model; scores and explains one transaction
   api.py                   FastAPI service
   dashboard.py             Streamlit dashboard
   ...                      exploration and earlier experiment scripts
-tests/                     API, explanation, cost and dashboard tests
+tests/                     API, explanation, cost, drift and dashboard tests
 samples/                   298 held-out test transactions for the dashboard
 reports/                   EDA notes, Random Forest baseline evaluation, API testing, figures
 models/fraud_model.joblib  trained model, threshold, feature list and test metrics

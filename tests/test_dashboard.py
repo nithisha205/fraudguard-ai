@@ -23,3 +23,11 @@ def test_dashboard_threshold_slider_changes_decisions():
 
     assert not app.exception
     assert caught_strict != caught_default
+
+
+def test_dashboard_shows_monitoring_results():
+    app = AppTest.from_file(DASHBOARD, default_timeout=60).run()
+
+    labels = [metric.label for metric in app.metric]
+    assert "Static model cost" in labels
+    assert "Expanding model cost" in labels

@@ -1,3 +1,5 @@
+import json
+
 import altair as alt
 import pandas as pd
 import streamlit as st
@@ -7,7 +9,15 @@ from data import PROJECT_ROOT, total_cost
 
 SAMPLES_PATH = PROJECT_ROOT / "samples" / "sample_transactions.csv"
 COST_PLOT_PATH = PROJECT_ROOT / "reports" / "figures" / "threshold_cost.png"
+MONITORING_PATH = PROJECT_ROOT / "reports" / "monitoring.json"
+MONITORING_PLOT_PATH = PROJECT_ROOT / "reports" / "figures" / "monitoring.png"
 FACTORS_SHOWN = 10
+STATUS_LABELS = {
+    "ok": "🟢 OK",
+    "warning": "🟠 Warning",
+    "retrain": "🔴 Retrain",
+    "no reference": "⚪ No earlier day",
+}
 
 st.set_page_config(page_title="FraudGuard AI", layout="wide")
 
@@ -38,7 +48,9 @@ review_cost = st.sidebar.number_input(
     "Review cost per false alarm ($)", min_value=0.0, value=5.0, step=1.0
 )
 
-tab_check, tab_overview, tab_model = st.tabs(["Check a transaction", "Sample overview", "Model"])
+tab_check, tab_overview, tab_monitoring, tab_model = st.tabs(
+    ["Check a transaction", "Sample overview", "Monitoring", "Model"]
+)
 
 with tab_check:
     show = st.radio(
@@ -156,6 +168,53 @@ with tab_overview:
         },
         width="stretch",
     )
+
+with tab_monitoring:
+    if not MONITORING_PATH.exists():
+        st.info("Run `python src/monitoring.py` to create the monitoring report.")
+    else:
+        monitoring = json.loads(MONITORING_PATH.read_text())
+        totals = monitoring["totals"]
+        saving = totals["static"]["cost"] - totals["expanding"]["cost"]
+
+        st.caption(
+            f"Replays the 48 hours in {monitoring['block_hours']}-hour blocks. A model trained on the first 16 hours "
+            "and never updated (static) is compared with retraining on all data so far (expanding) "
+            "or on the latest 16 hours (sliding). Drift compares each block with the same hours a day earlier."
+        )
+        monitoring_columns = st.columns(3)
+        for column, name in zip(monitoring_columns, ["static", "expanding", "sliding"]):
+            column.metric(
+                f"{name.capitalize()} model cost",
+                f"${totals[name]['cost']:,.0f}",
+                delta=None if name == "static" else f"{totals[name]['cost'] - totals['static']['cost']:+,.0f}",
+                delta_color="inverse",
+                help=f"Fraud caught: {totals[name]['caught_share']:.1%}",
+            )
+        st.success(f"Retraining on all data so far saves ${saving:,.0f} over the monitored blocks.")
+
+        st.dataframe(
+            pd.DataFrame([
+                {
+                    "Hours": f"{b['hours'][0]}-{b['hours'][1]}",
+                    "Fraud": b["fraud"],
+                    "Drift status": STATUS_LABELS[b["status"]],
+                    "Score PSI": b["score_psi"],
+                    "Most drifted features": ", ".join(b["top_feature_psi"]) or "-",
+                    "Static avg precision": b["strategies"]["static"]["average_precision"],
+                    "Expanding avg precision": b["strategies"]["expanding"]["average_precision"],
+                }
+                for b in monitoring["blocks"]
+            ]),
+            hide_index=True,
+            width="stretch",
+        )
+        st.caption(
+            f"PSI above {monitoring['psi_warning']} is a warning and above {monitoring['psi_retrain']} "
+            "suggests retraining. Drift is measured without labels, so it is available as soon as transactions arrive."
+        )
+        if MONITORING_PLOT_PATH.exists():
+            st.image(str(MONITORING_PLOT_PATH))
 
 with tab_model:
     metrics = predictor.artifact.get("test_metrics", {})

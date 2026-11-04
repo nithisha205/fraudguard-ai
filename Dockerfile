@@ -14,7 +14,8 @@ COPY .streamlit/ .streamlit/
 COPY src/ src/
 COPY models/fraud_model.joblib models/
 COPY samples/ samples/
-COPY reports/figures/threshold_cost.png reports/figures/
+COPY reports/monitoring.json reports/
+COPY reports/figures/threshold_cost.png reports/figures/monitoring.png reports/figures/
 
 EXPOSE 8000 8501
 

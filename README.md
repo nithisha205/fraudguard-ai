@@ -4,6 +4,9 @@
 
 An end-to-end machine learning project that detects potentially fraudulent credit card transactions and **explains every prediction**.
 
+**Live demo:** [dashboard](https://fraudguard-dashboard-f28d.onrender.com) · [API docs](https://fraudguard-api-dj2k.onrender.com/docs)
+(free hosting: the first visit after a quiet spell can take up to a minute while the service wakes up)
+
 - XGBoost classifier trained on 284,807 real (anonymised) card transactions, of which only 0.17% are fraud.
 - Decision threshold chosen by **business cost** (missed fraud amount vs. manual review cost) with cross-validation.
 - FastAPI service that returns the fraud probability *and* the features that pushed it up or down (TreeSHAP).

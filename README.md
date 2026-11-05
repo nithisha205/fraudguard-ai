@@ -2,6 +2,7 @@
 
 [![Tests](https://github.com/nithisha205/fraudguard-ai/actions/workflows/tests.yml/badge.svg)](https://github.com/nithisha205/fraudguard-ai/actions/workflows/tests.yml)
 ![Python 3.11](https://img.shields.io/badge/python-3.11-blue)
+[![License: MIT](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
 [![Live demo](https://img.shields.io/badge/live%20demo-online-brightgreen)](https://fraudguard-dashboard-f28d.onrender.com)
 
 Credit card fraud detection that decides by **cost in dollars**, **explains every prediction**, and **monitors itself for drift**.
@@ -190,3 +191,7 @@ pyproject.toml               package, pytest and ruff settings
 
 [Credit Card Fraud Detection](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud) by the Machine Learning Group of Université Libre de Bruxelles (ULB),
 released under the Open Database License. `samples/sample_transactions.csv` is a 298-row extract of it.
+
+## License
+
+The code is released under the [MIT License](LICENSE). The dataset keeps its own license (see Data above).

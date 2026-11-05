@@ -3,3 +3,7 @@ gatherUsageStats = false
 
 [server]
 headless = true
+
+[client]
+# Hide the developer toolbar (Deploy button) from visitors.
+toolbarMode = "viewer"

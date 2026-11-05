@@ -62,9 +62,13 @@ with tab_check:
     elif show == "Legitimate only":
         choices = samples[samples["Class"] == 0]
 
+    # Open on the largest fraud the model catches: a clearer first example than an arbitrary row.
+    caught_fraud = samples[(samples["Class"] == 1) & (samples["Probability"] >= predictor.threshold)]
+    default_id = caught_fraud["Amount"].idxmax()
     transaction_id = st.selectbox(
         "Transaction",
         choices.index,
+        index=choices.index.get_loc(default_id) if default_id in choices.index else 0,
         format_func=lambda i: (
             f"#{i} · ${samples.at[i, 'Amount']:,.2f} · "
             f"{'Fraud' if samples.at[i, 'Class'] == 1 else 'Legitimate'}"
@@ -123,7 +127,7 @@ with tab_check:
         .mark_bar()
         .encode(
             x=alt.X("contribution:Q", title="Contribution (log-odds)"),
-            y=alt.Y("feature:N", sort=None, title=None),
+            y=alt.Y("feature:N", sort=None, title=None, axis=alt.Axis(labelOverlap=False)),
             color=alt.Color(
                 "Direction:N",
                 scale=alt.Scale(domain=["Towards fraud", "Towards legitimate"], range=["#d64545", "#2f9e6b"]),
